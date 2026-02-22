@@ -1,38 +1,46 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
-import { SelectFilesToShare } from './file-selection/file-selection'
+import { SharedFileProvider, FileItem } from './file_selection/shared_file_provider';
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
 	// This line of code will only be executed once when your extension is activated
+	console.log('Attempting to register TreeView...');
+
 	console.log('Congratulations, your extension "learningextensionsextension" is now active!');
 
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
-	const disposable = vscode.commands.registerCommand('learningextensionsextension.goodbyeworld', () => {
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Goodbye World from LearningExtensionsExtension!');
+	// const rootPath = (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0)
+	// 	? vscode.workspace.workspaceFolders[0].uri.fsPath : undefined;
+	const rootPath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+
+	// The crash is happening right here!
+	const treeProvider = new SharedFileProvider(rootPath, context);
+
+	const view = vscode.window.createTreeView('fileShareSelector', {
+		treeDataProvider: treeProvider
 	});
-	const HelloWorldCommand = vscode.commands.registerCommand('learningextensionsextension.helloworld', () => {
-		vscode.window.showInformationMessage('Hello World from LearningExtensionsExtension!');
-	});
-	const TestError = vscode.commands.registerCommand('learningextensionsextension.testerror', () => {
-		vscode.window.showErrorMessage('This is a test error from LearningExtensionsExtension!');
-	});
-	const TestOpenDialog = vscode.commands.registerCommand('learningextensionsextension.testopendialog', async () => {
-		SelectFilesToShare();
+	context.subscriptions.push(view);
+
+	// Handle checkbox state changes
+	view.onDidChangeCheckboxState(async e => {
+		const sharedFiles: string[] = context.globalState.get('sharedFiles', []);
+		for (const [item, state] of e.items) {
+			const fileItem = item as FileItem;
+			if (state === vscode.TreeItemCheckboxState.Checked) {
+				if (!sharedFiles.includes(fileItem.fsPath)) {
+					sharedFiles.push(fileItem.fsPath);
+				}
+			} else {
+				const index = sharedFiles.indexOf(fileItem.fsPath);
+				if (index > -1) {
+					sharedFiles.splice(index, 1);
+				}
+			}
+		}
+		await context.globalState.update('sharedFiles', sharedFiles);
+		treeProvider.refresh();
 	});
 
-	context.subscriptions.push(disposable);
-	context.subscriptions.push(HelloWorldCommand);
-	context.subscriptions.push(TestError);
-	context.subscriptions.push(TestOpenDialog);
+	console.log('TreeView registered successfully.');
 }
 
 // This method is called when your extension is deactivated

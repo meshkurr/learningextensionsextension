@@ -30,7 +30,25 @@
         "command": "learningextensionsextension.testopendialog",
         "title": "Test Open Dialog"
       }
-    ]
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "fileShareContainer",
+          "title": "Select Files to Share",
+          "icon": "media/ShareIcon.png"
+        }
+      ]
+    },
+    "views": {
+      "fileShareContainer": [
+        {
+          "id": "fileShareSelector",
+          "name": "",
+          "icon": "media/ShareIcon.png"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
